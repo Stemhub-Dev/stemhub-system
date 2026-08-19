@@ -22,11 +22,30 @@ services:
       retries: 12
       start_period: 10s
 
-  # ml-service: OMITIDO A PROPOSITO.
-  # El repo stemhub-microservicio-IA (rama main) todavia no tiene Dockerfile
-  # ni codigo (solo README), y el backend no tiene ninguna integracion con
-  # el hoy. Cuando el repo tenga contenido real, agregar aca un servicio
-  # con build.context: ./stemhub-microservicio-IA y el puerto que exponga.
+  ml-service:
+    build:
+      context: ./stemhub-microservicio-IA
+      dockerfile: Dockerfile
+    container_name: stemhub-ml-service
+    restart: unless-stopped
+    environment:
+      APP_PORT: 8000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${ML_SERVICE_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
   backend:
     build:
