@@ -1,0 +1,7 @@
+# Repos clonados por setup.sh (viven en sus propios repos de GitHub)
+Stem-Hub-BackEnd/
+stemhub-frontend/
+stemhub-microservicio-IA/
+
+# Variables de entorno locales
+.env

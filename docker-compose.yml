@@ -1,0 +1,66 @@
+name: stemhub-system
+
+services:
+
+  postgres:
+    image: postgres:17
+    container_name: stemhub-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - stemhub_postgres_data:/var/lib/postgresql/data
+      - ./Stem-Hub-BackEnd/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  # ml-service: OMITIDO A PROPOSITO.
+  # El repo stemhub-microservicio-IA (rama main) todavia no tiene Dockerfile
+  # ni codigo (solo README), y el backend no tiene ninguna integracion con
+  # el hoy. Cuando el repo tenga contenido real, agregar aca un servicio
+  # con build.context: ./stemhub-microservicio-IA y el puerto que exponga.
+
+  backend:
+    build:
+      context: ./Stem-Hub-BackEnd
+      dockerfile: Dockerfile
+    container_name: stemhub-backend
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      APP_PORT: 8080
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./stemhub-frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+        VITE_GOTRUE_URL: ${VITE_GOTRUE_URL:-http://localhost:9999}
+    container_name: stemhub-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  stemhub_postgres_data:
+    name: stemhub_postgres_data
