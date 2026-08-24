@@ -22,6 +22,42 @@ services:
       retries: 12
       start_period: 10s
 
+  minio:
+    image: minio/minio:latest
+    container_name: stemhub-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - stemhub_minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  ml-spleeter-worker:
+    build:
+      context: ./stemhub-microservicio-IA/spleeter_worker
+      dockerfile: Dockerfile
+    container_name: stemhub-ml-spleeter-worker
+    restart: unless-stopped
+    volumes:
+      - ml_tmp_data:/shared-tmp
+      - ml_spleeter_models:/models
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
   ml-service:
     build:
       context: ./stemhub-microservicio-IA
@@ -30,15 +66,25 @@ services:
     restart: unless-stopped
     environment:
       APP_PORT: 8000
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
+      SPLEETER_WORKER_URL: http://ml-spleeter-worker:8000
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
+      QWEN_API_KEY: ${QWEN_API_KEY}
+      QWEN_API_BASE_URL: ${QWEN_API_BASE_URL}
+      QWEN_MODEL: ${QWEN_MODEL:-qwen2.5-7b-instruct}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET:-stemhub-audio}
     ports:
       - "${ML_SERVICE_PORT:-8000}:8000"
+    volumes:
+      - ml_tmp_data:/shared-tmp
     depends_on:
-      postgres:
+      ml-spleeter-worker:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -72,7 +118,6 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
-        VITE_GOTRUE_URL: ${VITE_GOTRUE_URL:-http://localhost:9999}
     container_name: stemhub-frontend
     restart: unless-stopped
     ports:
@@ -83,3 +128,9 @@ services:
 volumes:
   stemhub_postgres_data:
     name: stemhub_postgres_data
+  stemhub_minio_data:
+    name: stemhub_minio_data
+  ml_tmp_data:
+    name: ml_tmp_data
+  ml_spleeter_models:
+    name: ml_spleeter_models

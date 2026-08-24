@@ -23,7 +23,5 @@ docker compose up -d --build
 | Backend | http://localhost:8080 |
 | ML Service | http://localhost:8000 |
 | Postgres | localhost:5432 |
-
-## Notas
-
-- El login/JWT no funciona hasta levantar GoTrue por separado (no incluido en este orquestador).
+| MinIO (API S3) | http://localhost:9000 |
+| MinIO (consola) | http://localhost:9001 |
