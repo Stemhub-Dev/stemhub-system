@@ -46,8 +46,20 @@ services:
     build:
       context: ./stemhub-microservicio-IA/spleeter_worker
       dockerfile: Dockerfile
+      # Para build con soporte GPU, descomentar:
+      # args:
+      #   BASE_IMAGE: tensorflow/tensorflow:2.5.0-gpu
     container_name: stemhub-ml-spleeter-worker
     restart: unless-stopped
+    # Requiere driver NVIDIA propietario + nvidia-container-toolkit en el host,
+    # y build con BASE_IMAGE=tensorflow/tensorflow:2.5.0-gpu (ver arriba).
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
     volumes:
       - ml_tmp_data:/shared-tmp
       - ml_spleeter_models:/models
