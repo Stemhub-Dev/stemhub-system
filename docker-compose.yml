@@ -158,7 +158,7 @@ services:
 
 networks:
   supabase_network_stemhub:
-    name: supabase_network_Stem-Hub-BackEnd
+    name: supabase_network_supabase-stemhub
     external: true
 
 volumes:
