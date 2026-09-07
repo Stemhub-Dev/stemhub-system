@@ -128,10 +128,23 @@ services:
       SUPABASE_AUDIENCE: ${SUPABASE_AUDIENCE:-authenticated}
       SUPABASE_JWKS_BASE_URL: ${SUPABASE_JWKS_BASE_URL:-http://kong:8000}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+      # Storage de audio, compartido con el bucket que ya usa ml-service.
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET:-stemhub-audio}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      # Host con el que el NAVEGADOR (no el backend) resuelve las URLs
+      # presignadas de descarga/reproducción de audio. MINIO_ENDPOINT
+      # ("minio:9000") solo es resoluble dentro de la red de Docker.
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-localhost:9000}
+      MINIO_PUBLIC_USE_SSL: ${MINIO_PUBLIC_USE_SSL:-false}
     ports:
       - "${APP_PORT:-8080}:8080"
     depends_on:
       postgres:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     # Red que crea "npx supabase start" (nombre derivado de project_id en
     # Stem-Hub-BackEnd/supabase/config.toml). Necesaria para alcanzar "kong"
