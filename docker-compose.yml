@@ -139,6 +139,23 @@ services:
       # ("minio:9000") solo es resoluble dentro de la red de Docker.
       MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-localhost:9000}
       MINIO_PUBLIC_USE_SSL: ${MINIO_PUBLIC_USE_SSL:-false}
+      # SMTP para el mail de invitación a proyecto, enviado directamente por
+      # el backend Go (no pasa por GoTrue/auth.email.smtp). En dev local
+      # apunta a Inbucket (ver Stem-Hub-BackEnd/supabase/config.toml,
+      # [local_smtp]) para no mandar mails reales. Este contenedor corre
+      # dentro de la red de Docker que crea "npx supabase start" (ver
+      # "networks" abajo), así que se conecta directo al contenedor de
+      # Inbucket por su nombre y su puerto SMTP INTERNO (1025) — no por
+      # "127.0.0.1:54325", que es el puerto mapeado al host para procesos
+      # que corren fuera de Docker (mismo motivo que SUPABASE_JWKS_BASE_URL
+      # arriba usa "kong" en vez de 127.0.0.1).
+      SMTP_HOST: ${SMTP_HOST:-supabase_inbucket_supabase-stemhub}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_REMITENTE: ${SMTP_REMITENTE:-StemHub <no-reply@stemhub.app>}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:5173}
+      INVITACION_DIAS_VENCIMIENTO: ${INVITACION_DIAS_VENCIMIENTO:-7}
     ports:
       - "${APP_PORT:-8080}:8080"
     depends_on:
