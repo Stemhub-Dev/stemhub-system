@@ -34,7 +34,9 @@ services:
       start_period: 10s
 
   minio:
-    image: minio/minio:latest
+    # minio/minio se retiró de Docker Hub el 2026-09-11 (repo community
+    # archivado, distribución solo vía quay.io ahora, mismos tags).
+    image: quay.io/minio/minio:latest
     container_name: stemhub-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
