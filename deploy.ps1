@@ -19,7 +19,7 @@ if (-not (Test-Path $EnvFile)) {
 }
 
 Write-Host "==> 1/2 Descargando imágenes ($EnvFile)..."
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file $EnvFile pull
+docker compose -f docker-compose.prod.yml --env-file $EnvFile pull
 
 Write-Host "==> 2/2 Levantando el stack..."
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file $EnvFile up -d
+docker compose -f docker-compose.prod.yml --env-file $EnvFile up -d

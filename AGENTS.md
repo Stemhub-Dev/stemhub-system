@@ -14,9 +14,8 @@ como subcarpetas:
 
 ```
 stemhub-system/
-├── docker-compose.yml            # base común: servicios, redes, volúmenes (sin build/image)
-├── docker-compose.override.yml   # dev: build local + red de Supabase local (auto-aplicado)
-├── docker-compose.prod.yml       # prod: image de ghcr.io/stemhub-dev/* (aplicado explícito con -f)
+├── docker-compose.yml            # DEV standalone: build local + red de Supabase local
+├── docker-compose.prod.yml       # PROD standalone: image de ghcr.io/stemhub-dev/* (usa -f explícito)
 ├── setup.sh                      # clona/actualiza los 3 repos de abajo (rama main)
 ├── up.sh / down.sh / up.ps1 / down.ps1     # dev
 ├── deploy.sh / deploy.ps1                  # prod
@@ -24,6 +23,12 @@ stemhub-system/
 ├── stemhub-frontend/            # repo propio: github.com/Stemhub-Dev/stemhub-frontend
 └── stemhub-microservicio-IA/    # repo propio: github.com/Stemhub-Dev/stemhub-microservicio-IA
 ```
+
+`docker-compose.yml` y `docker-compose.prod.yml` son dos archivos completos
+e independientes (mismos servicios/nombres/volúmenes en ambos, para que sea
+fácil compararlos), no una base + override — decisión tomada para que un
+solo archivo compose sea suficiente al desplegar desde herramientas que no
+soportan combinar varios `-f` (p. ej. Coolify).
 
 **Cada subrepo publica su propia imagen a `ghcr.io/stemhub-dev/*`** vía un
 workflow de GitHub Actions propio (`.github/workflows/publish-image.yml`),
@@ -48,12 +53,12 @@ vive en la rama `dev` de cada repo, que suele estar *adelantada* respecto a
 "no está implementado" al levantar el stack, lo primero a chequear es en qué
 rama está parada cada subcarpeta (`git -C Stem-Hub-BackEnd branch
 --show-current`, ídem `stemhub-frontend`) antes de asumir que falta código.
-En dev, `docker-compose.override.yml` construye las imágenes desde el
-checkout local de cada carpeta (`context: ./Stem-Hub-BackEnd`,
-`context: ./stemhub-frontend`), así que la imagen refleja literalmente la
-rama que esté checked-out ahí en ese momento, no un target fijo. En
-producción esto no aplica: `docker-compose.prod.yml` usa imágenes ya
-publicadas (`image: ghcr.io/stemhub-dev/...`), no el checkout local.
+En dev, `docker-compose.yml` construye las imágenes desde el checkout local
+de cada carpeta (`context: ./Stem-Hub-BackEnd`, `context: ./stemhub-frontend`),
+así que la imagen refleja literalmente la rama que esté checked-out ahí en
+ese momento, no un target fijo. En producción esto no aplica:
+`docker-compose.prod.yml` usa imágenes ya publicadas
+(`image: ghcr.io/stemhub-dev/...`), no el checkout local.
 
 ## Arquitectura general
 
@@ -247,9 +252,9 @@ frontend para "nueva versión" más allá del form inline ya existente.
   o recrear el volumen — no asume que un `docker compose up` posterior la
   vaya a correr sola.
 - El `.env` real (no versionado) vive en la raíz de `stemhub-system` y lo
-  comparten todos los servicios de dev (`docker-compose.yml` +
-  `docker-compose.override.yml`) — variables nuevas que necesite el backend o
-  el microservicio (como las de MinIO) se agregan ahí y en `.env.example`
+  comparten todos los servicios de dev (`docker-compose.yml`) — variables
+  nuevas que necesite el backend o el microservicio (como las de MinIO) se
+  agregan ahí y en `.env.example`
   como referencia, no en un `.env` por subcarpeta. El equivalente para
   producción es `.env.production` / `.env.production.example`, usado con
   `docker-compose.prod.yml` (ver `deploy.sh`).

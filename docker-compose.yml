@@ -1,14 +1,15 @@
 name: stemhub-system
 
-# Base común a dev y producción: servicios, redes, volúmenes y variables de
-# entorno que no cambian entre entornos. Ningún servicio define "build:" ni
-# "image:" acá — eso vive en docker-compose.override.yml (dev, aplicado
-# automático) o docker-compose.prod.yml (prod, aplicado explícito con -f),
-# para que este archivo nunca se pueda levantar solo por error.
+# Compose de DESARROLLO LOCAL: construye cada servicio desde el checkout
+# local de su subrepo y usa Supabase local (Auth/GoTrue), levantado aparte
+# con "npx supabase start" (ver up.sh). Standalone — no requiere "-f".
 #
-# Dev:  docker compose up -d --build      (usa up.sh)
-# Prod: docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-#         --env-file .env.production up -d   (usa deploy.sh)
+# El equivalente de PRODUCCIÓN es docker-compose.prod.yml: mismos servicios,
+# pero con "image: ghcr.io/stemhub-dev/*" en vez de "build:", y sin la red
+# de Supabase local (usa Supabase Cloud). Ver deploy.sh.
+#
+# Dev:  docker compose up -d --build   (usa up.sh)
+# Prod: docker compose -f docker-compose.prod.yml --env-file .env.production up -d   (usa deploy.sh)
 
 services:
 
@@ -53,10 +54,16 @@ services:
       start_period: 10s
 
   ml-spleeter-worker:
+    build:
+      context: ./stemhub-microservicio-IA/spleeter_worker
+      dockerfile: Dockerfile
+      # Para build con soporte GPU, descomentar:
+      # args:
+      #   BASE_IMAGE: tensorflow/tensorflow:2.5.0-gpu
     container_name: stemhub-ml-spleeter-worker
     restart: unless-stopped
     # Requiere driver NVIDIA propietario + nvidia-container-toolkit en el
-    # host, y build/imagen con soporte GPU (ver spleeter_worker/Dockerfile).
+    # host, y build/imagen con soporte GPU (ver arriba).
     # deploy:
     #   resources:
     #     reservations:
@@ -75,6 +82,9 @@ services:
       start_period: 10s
 
   ml-service:
+    build:
+      context: ./stemhub-microservicio-IA
+      dockerfile: Dockerfile
     container_name: stemhub-ml-service
     restart: unless-stopped
     environment:
@@ -107,6 +117,9 @@ services:
       start_period: 10s
 
   backend:
+    build:
+      context: ./Stem-Hub-BackEnd
+      dockerfile: Dockerfile
     container_name: stemhub-backend
     restart: unless-stopped
     environment:
@@ -116,6 +129,12 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       APP_PORT: 8080
+      # SUPABASE_URL debe ser la URL pública que también usa el
+      # navegador/frontend: es contra ese valor que se valida el claim "iss"
+      # del token. La Supabase CLI local siempre emite tokens con
+      # iss=http://127.0.0.1:54321 (no configurable), así que el JWKS se
+      # descarga por un camino de red distinto (ver "networks" abajo) — ver
+      # Stem-Hub-BackEnd/supabase/README.md para el detalle completo.
       SUPABASE_URL: ${SUPABASE_URL:-http://127.0.0.1:54321}
       SUPABASE_AUDIENCE: ${SUPABASE_AUDIENCE:-authenticated}
       SUPABASE_JWKS_BASE_URL: ${SUPABASE_JWKS_BASE_URL:-http://kong:8000}
@@ -132,7 +151,15 @@ services:
       MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-localhost:9000}
       MINIO_PUBLIC_USE_SSL: ${MINIO_PUBLIC_USE_SSL:-false}
       # SMTP para el mail de invitación a proyecto, enviado directamente por
-      # el backend Go (no pasa por GoTrue/auth.email.smtp).
+      # el backend Go (no pasa por GoTrue/auth.email.smtp). En dev local
+      # apunta a Inbucket (ver Stem-Hub-BackEnd/supabase/config.toml,
+      # [local_smtp]) para no mandar mails reales. Este contenedor corre
+      # dentro de la red de Docker que crea "npx supabase start" (ver
+      # "networks" abajo), así que se conecta directo al contenedor de
+      # Inbucket por su nombre y su puerto SMTP INTERNO (1025) — no por
+      # "127.0.0.1:54325", que es el puerto mapeado al host para procesos
+      # que corren fuera de Docker (mismo motivo que SUPABASE_JWKS_BASE_URL
+      # arriba usa "kong" en vez de 127.0.0.1).
       SMTP_HOST: ${SMTP_HOST:-supabase_inbucket_supabase-stemhub}
       SMTP_PORT: ${SMTP_PORT:-1025}
       SMTP_USER: ${SMTP_USER:-}
@@ -147,14 +174,33 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+    # Red que crea "npx supabase start" (nombre derivado de project_id en
+    # Stem-Hub-BackEnd/supabase/config.toml). Necesaria para alcanzar "kong"
+    # y descargar el JWKS del Supabase local.
+    networks:
+      - default
+      - supabase_network_stemhub
 
   frontend:
+    build:
+      context: ./stemhub-frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+        # Debe apuntar al Supabase local (ver "npx supabase start" en
+        # Stem-Hub-BackEnd), no a un servicio de este compose.
+        VITE_GOTRUE_URL: ${VITE_GOTRUE_URL:-http://127.0.0.1:54321/auth/v1}
     container_name: stemhub-frontend
     restart: unless-stopped
     ports:
       - "5173:80"
     depends_on:
       - backend
+
+networks:
+  supabase_network_stemhub:
+    name: supabase_network_supabase-stemhub
+    external: true
 
 volumes:
   stemhub_postgres_data:

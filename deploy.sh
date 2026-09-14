@@ -17,7 +17,7 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 
 echo "==> 1/2 Descargando imágenes (${ENV_FILE})..."
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file "$ENV_FILE" pull
+docker compose -f docker-compose.prod.yml --env-file "$ENV_FILE" pull
 
 echo "==> 2/2 Levantando el stack..."
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file "$ENV_FILE" up -d
+docker compose -f docker-compose.prod.yml --env-file "$ENV_FILE" up -d

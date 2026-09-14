@@ -9,33 +9,34 @@ Orquestador de los repos de StemHub (backend, frontend, microservicio de IA).
 
 ## Desarrollo local vs producción
 
-Este repo separa dos flujos:
+Este repo tiene dos archivos compose completos e independientes (ninguno
+depende del otro, no se combinan con `-f` múltiple):
 
-- **Desarrollo local**: `docker-compose.yml` (base) + `docker-compose.override.yml`
-  (aplicado automático por Compose) construyen las imágenes desde el checkout
-  local de cada subrepo y usan Supabase local (Auth/GoTrue) vía su propia CLI
-  — no forma parte de este `docker compose`. Es el flujo de abajo (`up.sh`/`up.ps1`).
-- **Producción**: `docker-compose.yml` (base) + `docker-compose.prod.yml`
-  (aplicado explícito con `-f`) usan las imágenes ya publicadas por el CI de
-  cada subrepo en `ghcr.io/stemhub-dev/*` y un proyecto de Supabase Cloud, sin
-  build local ni CLI. Ver [`deploy.sh`](./deploy.sh) y
-  [`.env.production.example`](./.env.production.example).
+- **Desarrollo local** (`docker-compose.yml`): construye cada servicio desde
+  el checkout local de su subrepo (`build: context`) y usa Supabase local
+  (Auth/GoTrue) vía su propia CLI — no forma parte de este `docker compose`.
+  Es el flujo de abajo (`up.sh`/`up.ps1`), y es el archivo que Compose usa
+  por default sin pasar `-f`.
+- **Producción** (`docker-compose.prod.yml`): usa las imágenes ya publicadas
+  por el CI de cada subrepo en `ghcr.io/stemhub-dev/*` (`image:`, no
+  `build:`) y un proyecto de Supabase Cloud, sin build local ni CLI. Ver
+  [`deploy.sh`](./deploy.sh) y [`.env.production.example`](./.env.production.example).
 
-`docker-compose.override.yml` y `docker-compose.prod.yml` nunca se combinan
-entre sí — son alternativas, no capas apilables.
+Ambos definen los mismos servicios (mismos nombres, mismos volúmenes) para
+que sea fácil compararlos, pero cada uno es autosuficiente: se puede borrar
+uno sin afectar al otro.
 
 ## Estructura de archivos
 
 | Archivo | Qué hace |
 |---|---|
-| `docker-compose.yml` | Base común a dev y producción: servicios, redes, volúmenes nombrados, healthchecks y las variables de entorno que no cambian entre entornos. Ningún servicio propio (`backend`/`frontend`/`ml-service`/`ml-spleeter-worker`) define `build:` ni `image:` acá — eso vive exclusivamente en uno de los dos archivos de abajo, para que este archivo nunca se pueda levantar solo por error. |
-| `docker-compose.override.yml` | Override de **desarrollo**. Docker Compose lo aplica automáticamente junto al base en cualquier `docker compose ...` sin flags (por eso `up.sh`/`up.ps1` no necesitan `-f`). Agrega el `build: context: ./<subrepo>` de cada servicio (construye desde el checkout local) y la red externa `supabase_network_stemhub` que crea `npx supabase start`, necesaria para que el backend alcance a Kong y descargue el JWKS del Auth local. |
-| `docker-compose.prod.yml` | Override de **producción**. Se aplica explícito con `-f` (nunca junto al de dev — lo hace `deploy.sh`). Reemplaza cada `build:` por `image: ghcr.io/stemhub-dev/<servicio>:<tag>`, las imágenes ya publicadas por el CI de cada subrepo. No declara la red de Supabase local: producción usa un proyecto de Supabase Cloud. |
-| `.env.example` | Variables de **desarrollo** (usadas por `up.sh`/`down.sh`, es decir base + override). Copiar a `.env`. |
-| `.env.production.example` | Variables de **producción** (usadas por `deploy.sh`, es decir base + prod): tags de imagen, URLs de Supabase Cloud, dominios reales, SMTP real, endpoint público de MinIO. Copiar a `.env.production`. |
-| `up.sh` / `up.ps1` | Levantan Supabase local + el stack de desarrollo (`docker compose up -d --build`, aplica base+override). Sin cambios de comportamiento respecto a antes de esta reorganización. |
+| `docker-compose.yml` | Compose de **desarrollo**, standalone. `build: context: ./<subrepo>` en cada servicio propio (construye desde el checkout local) y la red externa `supabase_network_stemhub` que crea `npx supabase start`, necesaria para que el backend alcance a Kong y descargue el JWKS del Auth local. Es el archivo que Compose usa sin `-f` (por eso `up.sh`/`up.ps1` no lo necesitan). |
+| `docker-compose.prod.yml` | Compose de **producción**, standalone. Mismos servicios que el de arriba, pero con `image: ghcr.io/stemhub-dev/<servicio>:<tag>` en vez de `build:` (imágenes ya publicadas por el CI de cada subrepo), y sin la red de Supabase local — producción usa un proyecto de Supabase Cloud. Se usa con `-f docker-compose.prod.yml` explícito (lo hace `deploy.sh`). |
+| `.env.example` | Variables de **desarrollo** (usadas por `up.sh`/`down.sh`). Copiar a `.env`. |
+| `.env.production.example` | Variables de **producción** (usadas por `deploy.sh`): tags de imagen, URLs de Supabase Cloud, dominios reales, SMTP real, endpoint público de MinIO. Copiar a `.env.production`. |
+| `up.sh` / `up.ps1` | Levantan Supabase local + el stack de desarrollo (`docker compose up -d --build`, usa `docker-compose.yml` sin flags). Sin cambios de comportamiento respecto a antes de esta reorganización. |
 | `down.sh` / `down.ps1` | Bajan el stack de desarrollo y Supabase local, en el orden correcto. |
-| `deploy.sh` / `deploy.ps1` | Despliegue de **producción**: `docker compose pull` + `up -d` contra base+prod, usando `.env.production`. A diferencia de `up.sh`, nunca invoca la CLI de Supabase — producción no depende de ella. |
+| `deploy.sh` / `deploy.ps1` | Despliegue de **producción**: `docker compose -f docker-compose.prod.yml pull` + `up -d`, usando `.env.production`. A diferencia de `up.sh`, nunca invoca la CLI de Supabase — producción no depende de ella. |
 | `setup.sh` | Clona/actualiza los 3 subrepos (`Stem-Hub-BackEnd`, `stemhub-frontend`, `stemhub-microservicio-IA`) a la rama `main`. Sin cambios. |
 | `Stem-Hub-BackEnd/.github/workflows/publish-image.yml`, `stemhub-frontend/.github/workflows/publish-image.yml`, `stemhub-microservicio-IA/.github/workflows/publish-image.yml` | Viven en cada subrepo, no acá — build + push de la imagen de ese servicio a `ghcr.io/stemhub-dev/*` en cada push a `main` o tag `v*`. Es lo que `docker-compose.prod.yml` termina consumiendo. |
 
@@ -142,9 +143,9 @@ cp .env.production.example .env.production   # completar secretos y dominios rea
 ./deploy.sh                                   # o .\deploy.ps1 en Windows
 ```
 
-`deploy.sh` hace `pull` + `up -d` contra `docker-compose.yml` +
-`docker-compose.prod.yml`, sin depender de Supabase local — producción usa
-un proyecto de Supabase Cloud (ver comentarios en `.env.production.example`).
+`deploy.sh` hace `pull` + `up -d` contra `docker-compose.prod.yml`, sin
+depender de Supabase local — producción usa un proyecto de Supabase Cloud
+(ver comentarios en `.env.production.example`).
 
 El punto abierto de este esquema es MinIO: en producción real necesita un
 endpoint público con TLS estable, o reemplazarse por un bucket S3-compatible

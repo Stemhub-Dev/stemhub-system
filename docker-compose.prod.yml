@@ -1,19 +1,176 @@
-# Override de PRODUCCIÓN — se aplica explícito junto a docker-compose.yml
-# (ver deploy.sh), NUNCA junto a docker-compose.override.yml. Reemplaza cada
-# "build: context" local por la imagen ya publicada por el CI de cada
-# subrepo a GHCR. Sin la red "supabase_network_*": producción usa Supabase
-# Cloud, no la CLI local.
+name: stemhub-system
+
+# Compose de PRODUCCIÓN: usa las imágenes ya publicadas por el CI de cada
+# subrepo a ghcr.io/stemhub-dev/* (ver .github/workflows/publish-image.yml
+# en cada subrepo) en vez de construir desde código fuente, y usa un
+# proyecto de Supabase Cloud en vez de Supabase local — sin la red
+# "supabase_network_*" que crea "npx supabase start".
+#
+# El equivalente de DESARROLLO LOCAL es docker-compose.yml (sin sufijo):
+# mismos servicios, pero con "build: context" y Supabase local. Ver up.sh.
+#
+# Uso: docker compose -f docker-compose.prod.yml --env-file .env.production up -d
+# (o ./deploy.sh, que hace esto mismo + "pull" antes)
 
 services:
 
+  postgres:
+    image: postgres:17
+    container_name: stemhub-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - stemhub_postgres_data:/var/lib/postgresql/data
+      - ./Stem-Hub-BackEnd/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  minio:
+    image: minio/minio:latest
+    container_name: stemhub-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - stemhub_minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
   ml-spleeter-worker:
     image: ghcr.io/stemhub-dev/spleeter-worker:${SPLEETER_TAG:-latest}
+    container_name: stemhub-ml-spleeter-worker
+    restart: unless-stopped
+    # Requiere driver NVIDIA propietario + nvidia-container-toolkit en el
+    # host, y una imagen con soporte GPU publicada con ese build-arg.
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    volumes:
+      - ml_tmp_data:/shared-tmp
+      - ml_spleeter_models:/models
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
   ml-service:
     image: ghcr.io/stemhub-dev/ml-service:${ML_SERVICE_TAG:-latest}
+    container_name: stemhub-ml-service
+    restart: unless-stopped
+    environment:
+      APP_PORT: 8000
+      SPLEETER_WORKER_URL: http://ml-spleeter-worker:8000
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
+      QWEN_API_KEY: ${QWEN_API_KEY}
+      QWEN_API_BASE_URL: ${QWEN_API_BASE_URL}
+      QWEN_MODEL: ${QWEN_MODEL:-qwen2.5-7b-instruct}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET:-stemhub-audio}
+    ports:
+      - "${ML_SERVICE_PORT:-8000}:8000"
+    volumes:
+      - ml_tmp_data:/shared-tmp
+    depends_on:
+      ml-spleeter-worker:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
   backend:
     image: ghcr.io/stemhub-dev/backend:${BACKEND_TAG:-latest}
+    container_name: stemhub-backend
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      APP_PORT: 8080
+      # Proyecto de Supabase Cloud (no Supabase local) — ver
+      # .env.production.example. SUPABASE_JWKS_BASE_URL queda vacía: con
+      # Supabase Cloud el JWKS se descarga de la misma URL pública, no hace
+      # falta el camino alternativo vía "kong" que solo existe con la CLI.
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_AUDIENCE: ${SUPABASE_AUDIENCE:-authenticated}
+      SUPABASE_JWKS_BASE_URL: ${SUPABASE_JWKS_BASE_URL:-}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      # Storage de audio, compartido con el bucket que ya usa ml-service.
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET:-stemhub-audio}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      # Host con el que el NAVEGADOR (no el backend) resuelve las URLs
+      # presignadas de descarga/reproducción de audio — dominio público real
+      # con TLS en producción, no el nombre interno "minio:9000".
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT}
+      MINIO_PUBLIC_USE_SSL: ${MINIO_PUBLIC_USE_SSL:-true}
+      # SMTP real (SendGrid u otro proveedor transaccional), no Inbucket.
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_REMITENTE: ${SMTP_REMITENTE:-StemHub <no-reply@stemhub.app>}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL}
+      INVITACION_DIAS_VENCIMIENTO: ${INVITACION_DIAS_VENCIMIENTO:-7}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
 
   frontend:
     image: ghcr.io/stemhub-dev/frontend:${FRONTEND_TAG:-latest}
+    container_name: stemhub-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  stemhub_postgres_data:
+    name: stemhub_postgres_data
+  stemhub_minio_data:
+    name: stemhub_minio_data
+  ml_tmp_data:
+    name: ml_tmp_data
+  ml_spleeter_models:
+    name: ml_spleeter_models
