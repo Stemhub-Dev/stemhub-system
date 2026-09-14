@@ -1,0 +1,19 @@
+# Override de PRODUCCIÓN — se aplica explícito junto a docker-compose.yml
+# (ver deploy.sh), NUNCA junto a docker-compose.override.yml. Reemplaza cada
+# "build: context" local por la imagen ya publicada por el CI de cada
+# subrepo a GHCR. Sin la red "supabase_network_*": producción usa Supabase
+# Cloud, no la CLI local.
+
+services:
+
+  ml-spleeter-worker:
+    image: ghcr.io/stemhub-dev/spleeter-worker:${SPLEETER_TAG:-latest}
+
+  ml-service:
+    image: ghcr.io/stemhub-dev/ml-service:${ML_SERVICE_TAG:-latest}
+
+  backend:
+    image: ghcr.io/stemhub-dev/backend:${BACKEND_TAG:-latest}
+
+  frontend:
+    image: ghcr.io/stemhub-dev/frontend:${FRONTEND_TAG:-latest}

@@ -5,3 +5,4 @@ stemhub-microservicio-IA/
 
 # Variables de entorno locales
 .env
+.env.production

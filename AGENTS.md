@@ -8,18 +8,31 @@ obvios para no repetir trabajo de descubrimiento.
 ## Qué es este repo: un monorepo-orquestador
 
 `stemhub-system` **no contiene código de aplicación propio**. Es el
-orquestador: define el `docker-compose.yml` raíz, los scripts `up`/`down`, y
-`setup.sh`, que clona los repos reales de StemHub como subcarpetas:
+orquestador: define los `docker-compose*.yml` raíz, los scripts
+`up`/`down`/`deploy`, y `setup.sh`, que clona los repos reales de StemHub
+como subcarpetas:
 
 ```
 stemhub-system/
-├── docker-compose.yml          # orquesta todo el stack
-├── setup.sh                    # clona/actualiza los 3 repos de abajo (rama main)
-├── up.sh / down.sh / up.ps1 / down.ps1
+├── docker-compose.yml            # base común: servicios, redes, volúmenes (sin build/image)
+├── docker-compose.override.yml   # dev: build local + red de Supabase local (auto-aplicado)
+├── docker-compose.prod.yml       # prod: image de ghcr.io/stemhub-dev/* (aplicado explícito con -f)
+├── setup.sh                      # clona/actualiza los 3 repos de abajo (rama main)
+├── up.sh / down.sh / up.ps1 / down.ps1     # dev
+├── deploy.sh / deploy.ps1                  # prod
 ├── Stem-Hub-BackEnd/            # repo propio: github.com/Stemhub-Dev/Stem-Hub-BackEnd
 ├── stemhub-frontend/            # repo propio: github.com/Stemhub-Dev/stemhub-frontend
 └── stemhub-microservicio-IA/    # repo propio: github.com/Stemhub-Dev/stemhub-microservicio-IA
 ```
+
+**Cada subrepo publica su propia imagen a `ghcr.io/stemhub-dev/*`** vía un
+workflow de GitHub Actions propio (`.github/workflows/publish-image.yml`),
+en push a `main`/tags. Ninguno de los subrepos tiene ya un `docker-compose.yml`
+propio (se eliminaron los 3 que existían — cada uno duplicaba infra
+compartida con nombres que colisionaban con la raíz si corrían a la vez). El
+único punto de entrada para levantar el stack es la raíz de este repo; cada
+subrepo sigue siendo standalone-*buildable* (`docker build .`) para CI o
+debug puntual.
 
 Cada carpeta es un **repositorio git independiente** (remoto propio, ramas
 propias), no un submódulo ni un monorepo real con historia compartida. Esto
@@ -35,10 +48,12 @@ vive en la rama `dev` de cada repo, que suele estar *adelantada* respecto a
 "no está implementado" al levantar el stack, lo primero a chequear es en qué
 rama está parada cada subcarpeta (`git -C Stem-Hub-BackEnd branch
 --show-current`, ídem `stemhub-frontend`) antes de asumir que falta código.
-El `docker-compose.yml` construye las imágenes desde el checkout local de
-cada carpeta (`context: ./Stem-Hub-BackEnd`, `context: ./stemhub-frontend`),
-así que la imagen refleja literalmente la rama que esté checked-out ahí en
-ese momento, no un target fijo.
+En dev, `docker-compose.override.yml` construye las imágenes desde el
+checkout local de cada carpeta (`context: ./Stem-Hub-BackEnd`,
+`context: ./stemhub-frontend`), así que la imagen refleja literalmente la
+rama que esté checked-out ahí en ese momento, no un target fijo. En
+producción esto no aplica: `docker-compose.prod.yml` usa imágenes ya
+publicadas (`image: ghcr.io/stemhub-dev/...`), no el checkout local.
 
 ## Arquitectura general
 
@@ -232,6 +247,15 @@ frontend para "nueva versión" más allá del form inline ya existente.
   o recrear el volumen — no asume que un `docker compose up` posterior la
   vaya a correr sola.
 - El `.env` real (no versionado) vive en la raíz de `stemhub-system` y lo
-  comparten todos los servicios del `docker-compose.yml` — variables nuevas
-  que necesite el backend o el microservicio (como las de MinIO) se agregan
-  ahí y en `.env.example` como referencia, no en un `.env` por subcarpeta.
+  comparten todos los servicios de dev (`docker-compose.yml` +
+  `docker-compose.override.yml`) — variables nuevas que necesite el backend o
+  el microservicio (como las de MinIO) se agregan ahí y en `.env.example`
+  como referencia, no en un `.env` por subcarpeta. El equivalente para
+  producción es `.env.production` / `.env.production.example`, usado con
+  `docker-compose.prod.yml` (ver `deploy.sh`).
+- Los 3 subrepos publican su imagen a `ghcr.io/stemhub-dev/*` vía su propio
+  `.github/workflows/publish-image.yml` — no tienen `docker-compose.yml`
+  propio (se eliminaron, duplicaban infra y colisionaban con la raíz). Si un
+  subrepo necesita levantarse aislado para desarrollo, usar
+  `docker compose -p <nombre-unico> up <servicios>` desde la raíz, no crear
+  un compose nuevo en el subrepo.
