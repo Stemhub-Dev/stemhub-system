@@ -22,8 +22,10 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - "${DB_PORT:-5432}:5432"
+    # Sin "ports:" a propósito: solo accesible desde los otros contenedores
+    # de este compose (backend se conecta por nombre de servicio "postgres").
+    # Publicar el puerto al host además choca con lo que Coolify ya usa en
+    # el servidor (proxy, panel) y expondría la base directo a internet.
     volumes:
       - stemhub_postgres_data:/var/lib/postgresql/data
       - ./Stem-Hub-BackEnd/migrations:/docker-entrypoint-initdb.d:ro
@@ -44,9 +46,20 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+      # AWS Signature V4 (usada para firmar las URLs presignadas) ata la
+      # firma al hostname público que ve el cliente. Sin esto, MinIO firma
+      # contra su hostname interno del contenedor y las URLs presignadas
+      # fallan con "InvalidAccessKeyId" (error engañoso — no es un problema
+      # de credenciales) al pasar por el proxy de Coolify. Debe coincidir
+      # con MINIO_PUBLIC_ENDPOINT/MINIO_PUBLIC_USE_SSL del backend.
+      MINIO_SERVER_URL: ${MINIO_SERVER_URL}
+    # Sin "ports:" a propósito: en Coolify la exposición pública se hace vía
+    # el campo "Domains" de este servicio en la UI (dominio propio, puerto
+    # interno :9000), para que el proxy de Coolify enrute con TLS en vez de
+    # publicar el puerto directo al host. Necesario porque el NAVEGADOR usa
+    # MINIO_PUBLIC_ENDPOINT para las URLs presignadas de audio — a
+    # diferencia de postgres/ml-service, MinIO sí necesita ser alcanzable
+    # desde afuera, pero a través del proxy, no por puerto crudo.
     volumes:
       - stemhub_minio_data:/data
     healthcheck:
@@ -96,8 +109,8 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_BUCKET: ${MINIO_BUCKET:-stemhub-audio}
-    ports:
-      - "${ML_SERVICE_PORT:-8000}:8000"
+    # Sin "ports:" a propósito: el backend le habla por nombre de servicio
+    # interno ("ml-service:8000"), nadie externo necesita llamarlo directo.
     volumes:
       - ml_tmp_data:/shared-tmp
     depends_on:
@@ -150,8 +163,9 @@ services:
       SMTP_REMITENTE: ${SMTP_REMITENTE:-StemHub <no-reply@stemhub.app>}
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL}
       INVITACION_DIAS_VENCIMIENTO: ${INVITACION_DIAS_VENCIMIENTO:-7}
-    ports:
-      - "${APP_PORT:-8080}:8080"
+    # Sin "ports:" a propósito: exposición pública vía el campo "Domains" de
+    # Coolify (puerto interno :8080), no publicando el puerto directo al
+    # host — eso choca con lo que coolify-proxy ya usa en ese servidor.
     depends_on:
       postgres:
         condition: service_healthy
@@ -162,8 +176,8 @@ services:
     image: ghcr.io/stemhub-dev/frontend:${FRONTEND_TAG:-latest}
     container_name: stemhub-frontend
     restart: unless-stopped
-    ports:
-      - "80:80"
+    # Sin "ports:" a propósito: exposición pública vía el campo "Domains" de
+    # Coolify (puerto interno :80).
     depends_on:
       - backend
 
