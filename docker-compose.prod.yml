@@ -15,7 +15,14 @@ name: stemhub-system
 services:
 
   postgres:
-    image: postgres:17
+    # Postgres con las migraciones de Stem-Hub-BackEnd ya empaquetadas (ver
+    # Stem-Hub-BackEnd/Dockerfile.postgres) — no un bind-mount a
+    # ./Stem-Hub-BackEnd/migrations. En el servidor de producción solo existe
+    # el checkout de este repo (stemhub-system); Stem-Hub-BackEnd es un repo
+    # separado que nunca se clona ahí, así que ese path relativo resolvería a
+    # un directorio vacío y docker-entrypoint-initdb.d no correría ningún
+    # script — Postgres inicializaría "sano" pero sin ninguna tabla.
+    image: ghcr.io/stemhub-dev/postgres-migrations:${POSTGRES_MIGRATIONS_TAG:-latest}
     container_name: stemhub-postgres
     restart: unless-stopped
     environment:
@@ -28,7 +35,6 @@ services:
     # el servidor (proxy, panel) y expondría la base directo a internet.
     volumes:
       - stemhub_postgres_data:/var/lib/postgresql/data
-      - ./Stem-Hub-BackEnd/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
