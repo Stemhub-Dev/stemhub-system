@@ -155,7 +155,9 @@ services:
       # con TLS en producción, no el nombre interno "minio:9000".
       MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT}
       MINIO_PUBLIC_USE_SSL: ${MINIO_PUBLIC_USE_SSL:-true}
-      # SMTP real (SendGrid u otro proveedor transaccional), no Inbucket.
+      # SMTP real (Gmail con contraseña de aplicación), no Inbucket. Mismo
+      # proveedor/credencial que se configura en Supabase (Authentication >
+      # SMTP Settings) para los emails de Auth.
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
       SMTP_USER: ${SMTP_USER:-}
