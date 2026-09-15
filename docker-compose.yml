@@ -192,6 +192,11 @@ services:
         # Debe apuntar al Supabase local (ver "npx supabase start" en
         # Stem-Hub-BackEnd), no a un servicio de este compose.
         VITE_GOTRUE_URL: ${VITE_GOTRUE_URL:-http://127.0.0.1:54321/auth/v1}
+        # anon/public key fija de la Supabase CLI local (mismo valor en
+        # cualquier instalación, no es secreta). GoTrue la exige en Supabase
+        # Cloud; localmente no es estricta, pero se manda igual para no
+        # divergir entre entornos.
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0}
     container_name: stemhub-frontend
     restart: unless-stopped
     ports:
