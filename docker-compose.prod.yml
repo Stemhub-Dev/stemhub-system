@@ -179,6 +179,20 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+    # GET /health hace un PingContext real contra el pool de Postgres, no
+    # solo confirma que el puerto HTTP responde: Gin empieza a aceptar
+    # tráfico apenas arranca, pero database/sql abre las conexiones del pool
+    # de forma perezosa (recién con la primera query real) — sin este
+    # chequeo, el proxy podía enrutarle tráfico al backend en esa ventana y
+    # las primeras requests fallaban con 500 mientras el pool se establecía
+    # (visto en prod: 500 intermitentes en endpoints simples justo tras un
+    # redeploy, resueltos solos a los pocos minutos).
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
   frontend:
     image: ghcr.io/stemhub-dev/frontend:${FRONTEND_TAG:-latest}
@@ -187,7 +201,8 @@ services:
     # Sin "ports:" a propósito: exposición pública vía el campo "Domains" de
     # Coolify (puerto interno :80).
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   stemhub_postgres_data:
