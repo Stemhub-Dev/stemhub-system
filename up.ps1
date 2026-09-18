@@ -7,6 +7,7 @@ Set-Location $RootDir
 
 Write-Host "==> 1/2 Levantando Supabase local (Auth, DB propia, Studio)..."
 Set-Location "Stem-Hub-BackEnd"
+npm install --no-fund --no-audit
 npx supabase start
 Set-Location $RootDir
 
