@@ -169,6 +169,12 @@ services:
       SMTP_REMITENTE: ${SMTP_REMITENTE:-StemHub <no-reply@stemhub.app>}
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:5173}
       INVITACION_DIAS_VENCIMIENTO: ${INVITACION_DIAS_VENCIMIENTO:-7}
+      # Microservicio de IA (separación de stems y resumen de comentarios).
+      # Solo por la red interna: ml-service no necesita estar arriba para que
+      # el backend arranque, por eso no va en depends_on.
+      ML_SERVICE_URL: http://ml-service:8000
+      ML_SEPARACION_TIMEOUT_SEGUNDOS: ${ML_SEPARACION_TIMEOUT_SEGUNDOS:-330}
+      ML_RESUMEN_TIMEOUT_SEGUNDOS: ${ML_RESUMEN_TIMEOUT_SEGUNDOS:-60}
     ports:
       - "${APP_PORT:-8080}:8080"
     depends_on:
