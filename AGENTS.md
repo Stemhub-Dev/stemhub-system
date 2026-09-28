@@ -270,7 +270,7 @@ frontend para "nueva versión" más allá del form inline ya existente.
 - Las migraciones SQL solo se aplican automáticamente al inicializar un
   volumen de Postgres **vacío** (`docker-entrypoint-initdb.d`). Si ya existe
   un volumen con datos, una migración nueva hay que aplicarla a mano
-  (`docker compose exec -T postgres psql -U <user> -d <db> < migrations/0XX...sql`)
+  (`docker compose exec -T stemhub-postgres psql -U <user> -d <db> < migrations/0XX...sql`)
   o recrear el volumen — no asume que un `docker compose up` posterior la
   vaya a correr sola.
 - El `.env` real (no versionado) vive en la raíz de `stemhub-system` y lo

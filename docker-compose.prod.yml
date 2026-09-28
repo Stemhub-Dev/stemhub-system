@@ -14,7 +14,12 @@ name: stemhub-system
 
 services:
 
-  postgres:
+  # No se llama "postgres": en Coolify los servicios también se conectan a
+  # la red "coolify", donde coolify-db (la base interna de Coolify) ya tiene
+  # ese alias. Con el mismo nombre, el DNS devolvía las dos IPs y parte de
+  # las conexiones del backend iban a coolify-db y fallaban la autenticación
+  # (500 intermitentes, sin error en nuestra base).
+  stemhub-postgres:
     # Postgres con las migraciones de Stem-Hub-BackEnd ya empaquetadas (ver
     # Stem-Hub-BackEnd/Dockerfile.postgres) — no un bind-mount a
     # ./Stem-Hub-BackEnd/migrations. En el servidor de producción solo existe
@@ -140,7 +145,7 @@ services:
     container_name: stemhub-backend
     restart: unless-stopped
     environment:
-      DB_HOST: postgres
+      DB_HOST: stemhub-postgres
       DB_PORT: 5432
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
@@ -185,7 +190,7 @@ services:
     # Coolify (puerto interno :8080), no publicando el puerto directo al
     # host — eso choca con lo que coolify-proxy ya usa en ese servidor.
     depends_on:
-      postgres:
+      stemhub-postgres:
         condition: service_healthy
       minio:
         condition: service_healthy
