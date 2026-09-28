@@ -4,8 +4,13 @@ Orquestador de los repos de StemHub (backend, frontend, microservicio de IA).
 
 ## Requisitos
 
-- Docker y Docker Compose
+- Docker y Docker Compose (plugin v2, `docker compose`, no `docker-compose`)
 - Git
+- Node.js + npm — necesarios para `npx supabase` (Auth local, ver `up.sh`) y
+  para correr el Frontend con hot reload fuera de Docker (`npm run dev`)
+
+`setup.sh` valida que estén instalados y que Docker esté corriendo antes de
+clonar nada.
 
 ## Desarrollo local vs producción
 
