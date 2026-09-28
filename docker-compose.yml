@@ -34,9 +34,13 @@ services:
       start_period: 10s
 
   minio:
-    # minio/minio se retiró de Docker Hub el 2026-09-11 (repo community
-    # archivado, distribución solo vía quay.io ahora, mismos tags).
-    image: quay.io/minio/minio:latest
+    # MinIO dejó de publicar imágenes gratuitas: minio/minio (Docker Hub) y
+    # quay.io/minio/minio responden 401 sin credenciales, y eso rompía el
+    # "docker compose pull" de cada deploy en Coolify. coollabsio/minio es el
+    # binario oficial de MinIO recompilado por el equipo de Coolify, mismo
+    # comando, variables y "mc" incluido (el healthcheck no cambia). Tag
+    # fijo, no "latest": un cambio de imagen de storage no debe entrar solo.
+    image: ghcr.io/coollabsio/minio:RELEASE.2025-10-15T17-29-55Z
     container_name: stemhub-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
