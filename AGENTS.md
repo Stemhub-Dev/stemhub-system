@@ -5,6 +5,20 @@ Contexto para agentes/chats futuros que retomen este repo. Complementa a
 general, el estado real de implementación de cada parte, y detalles no
 obvios para no repetir trabajo de descubrimiento.
 
+> **Antes de cualquier `git status`/commit/branch check**: `stemhub-system`
+> es el repo padre/orquestador; `Stem-Hub-BackEnd` y `stemhub-frontend` (y
+> `stemhub-microservicio-IA`) son **repos git independientes** dentro de esa
+> carpeta, no submódulos. `git status`/`git log` parado en la raíz **nunca**
+> refleja sus cambios. Para saber en qué rama y con qué cambios pendientes
+> está cada uno:
+> ```bash
+> for d in . Stem-Hub-BackEnd stemhub-frontend stemhub-microservicio-IA; do
+>   echo "== $d =="; git -C "$d" branch --show-current; git -C "$d" status -s
+> done
+> ```
+> No asumir que los tres están en la misma rama — en la práctica casi nunca
+> lo están (cada uno puede tener su propia rama `feature/*` activa).
+
 ## Qué es este repo: un monorepo-orquestador
 
 `stemhub-system` **no contiene código de aplicación propio**. Es el
@@ -47,12 +61,12 @@ stemhub-frontend** — hay que pararse en cada subcarpeta y chequear su propio
 estado de rama por separado.
 
 **Gotcha operativo importante**: `setup.sh` clona/resetea cada repo a
-`main`, pero el trabajo activo (features recientes, incluida esta sesión)
-vive en la rama `dev` de cada repo, que suele estar *adelantada* respecto a
-`main` (mergeada solo hacia `dev`, no promovida a `main` todavía). Si algo
-"no está implementado" al levantar el stack, lo primero a chequear es en qué
-rama está parada cada subcarpeta (`git -C Stem-Hub-BackEnd branch
---show-current`, ídem `stemhub-frontend`) antes de asumir que falta código.
+`main`, pero el trabajo activo (features en curso) casi siempre vive en una
+rama distinta de `main` en cada subrepo — históricamente `dev`, pero en la
+práctica cualquier `feature/*` propia de ese subrepo, y no necesariamente la
+misma rama en los tres al mismo tiempo. Si algo "no está implementado" al
+levantar el stack, lo primero a chequear es en qué rama está parada cada
+subcarpeta (ver el comando de arriba) antes de asumir que falta código.
 En dev, `docker-compose.yml` construye las imágenes desde el checkout local
 de cada carpeta (`context: ./Stem-Hub-BackEnd`, `context: ./stemhub-frontend`),
 así que la imagen refleja literalmente la rama que esté checked-out ahí en
@@ -68,14 +82,13 @@ Navegador ──► Frontend (React/Vite, :5173)
                  │ REST/JSON+multipart│ REST directo (login/signup)
                  ▼                    ▼
              Backend (Go/Gin, :8080)  Supabase Auth/GoTrue local (:54321, vía Kong)
-                 │        │
-                 │        └──► MinIO (:9000/:9001) — storage de audio
-                 ▼
-             Postgres (:5432)
-
-ML Service (Python/FastAPI, :8000) ──► MinIO (mismo bucket "stemhub-audio")
-        │
-        └──► spleeter-worker (interno, separación de pistas)
+                 │        │  │
+                 │        │  └──► MinIO (:9000/:9001) — storage de audio
+                 ▼        │
+             Postgres     └──► ML Service (Python/FastAPI, ml-service:8000, red interna)
+             (:5432)               │        │
+                                   │        └──► MinIO (mismo bucket "stemhub-audio")
+                                   └──► spleeter-worker (interno, separación de pistas)
 ```
 
 - **Backend Go** es dueño de todo el modelo de dominio (usuarios, proyectos,
@@ -125,18 +138,27 @@ incrementales (`migrations/001...` a `010...`).
 - Storage de audio: cliente MinIO propio (`internal/storage`), agregado en
   esta sesión — antes el backend Go no tenía ninguna integración con MinIO.
 
-**Existe en el modelo de datos pero sin capa de servicio/handler/ruta**
-(o sea: la tabla está, el código Go no):
-- `stem` (`internal/model/stem.go`, tabla `stem` en
-  `001esquemainicial.sql`): pensado para los stems separados por el
-  microservicio de IA. No hay `StemRepository`/`StemService`/`StemHandler`
-  ni ruta registrada — es la próxima pieza natural a construir si se conecta
-  el backend con `stemhub-microservicio-IA`.
+- Stems (ABM, migraciones `019`/`020`): categorías, alta/edición/baja por
+  versión, URL presignada, comentarios por stem.
+- **Integración con el microservicio de IA** (`internal/mlservice`, cliente
+  HTTP a `ML_SERVICE_URL`, migración `021separacionstems.sql`):
+  - "Separar Pistas": `POST .../versiones/:versionId/stems/separacion`
+    (`{"cantidadStems": 2|4|5}`, 4 por defecto; exige `GESTIONAR_STEMS`)
+    responde **202** y procesa en segundo plano (goroutine, de a una
+    separación por vez porque el worker de Spleeter es de un proceso). El
+    estado (`PENDIENTE`/`PROCESANDO`/`COMPLETADA`/`ERROR`) vive en la tabla
+    `separacionstem` y se consulta con `GET .../stems/separacion`. Los stems
+    resultantes son stems comunes con `generadoconia = true`, en categorías
+    por defecto (Voz/Batería/Bajo/Piano/Otros). Al arrancar, el backend pasa
+    a `ERROR` las separaciones que quedaron en curso. No se puede volver a
+    separar mientras la versión tenga stems generados con IA (409).
+  - Resumen de comentarios: `GET .../versiones/:versionId/comentarios/resumen`
+    (cualquier integrante), on-demand vía Gemini, no se persiste.
+  - Frontend (`stemhub-frontend`, rama `feature/integracion-ml-service`):
+    botón "Separar Pistas" del Detalle Canción con consulta periódica del
+    estado, y "Resumir" en el panel de comentarios (ver su AGENTS.md).
 
 **No implementado / fuera de alcance actual:**
-- Ningún endpoint llama al microservicio de IA todavía (ni separación de
-  pistas ni insights de comentarios) — los dos sistemas existen pero no
-  están conectados.
 - No hay endpoint de lectura que devuelva una URL presignada de descarga
   para reproducir el audio subido — el backend guarda el *object key* de
   MinIO (no una URL), y no existe todavía un endpoint que la resuelva a una
