@@ -1,0 +1,51 @@
+{
+  "intercambios": [
+    {
+      "metodo": "DELETE",
+      "url": "http://localhost:8080/proyectos/33/canciones/33/versiones/32/comentarios/22",
+      "headers": {
+        "Authorization": "Bearer eyJhbGciOiJFUzI1…"
+      },
+      "status": 403,
+      "respuesta": {
+        "error": "No tenés permisos para eliminar este comentario"
+      }
+    }
+  ],
+  "consultas": [
+    {
+      "titulo": "Comentario ANTES del DELETE",
+      "consulta": {
+        "sql": "SELECT c.codigocomentario, i.nombreintegrante AS autor, c.descripcioncomentario, c.fechahorabajacomentario FROM comentario c JOIN integrante i ON i.codintegrante = c.codintegrante WHERE c.codigocomentario = $1",
+        "parametros": [
+          22
+        ],
+        "filas": [
+          {
+            "codigocomentario": "22",
+            "autor": "QA MusicoA 5173",
+            "descripcioncomentario": "Comentario del músico A: la guitarra está desafinada",
+            "fechahorabajacomentario": null
+          }
+        ]
+      }
+    },
+    {
+      "titulo": "Comentario DESPUÉS del DELETE",
+      "consulta": {
+        "sql": "SELECT c.codigocomentario, i.nombreintegrante AS autor, c.descripcioncomentario, c.fechahorabajacomentario FROM comentario c JOIN integrante i ON i.codintegrante = c.codintegrante WHERE c.codigocomentario = $1",
+        "parametros": [
+          22
+        ],
+        "filas": [
+          {
+            "codigocomentario": "22",
+            "autor": "QA MusicoA 5173",
+            "descripcioncomentario": "Comentario del músico A: la guitarra está desafinada",
+            "fechahorabajacomentario": null
+          }
+        ]
+      }
+    }
+  ]
+}

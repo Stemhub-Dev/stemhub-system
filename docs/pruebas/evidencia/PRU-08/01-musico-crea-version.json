@@ -1,0 +1,81 @@
+{
+  "intercambios": [
+    {
+      "metodo": "POST",
+      "url": "http://localhost:8080/proyectos/32/canciones/32/versiones",
+      "headers": {
+        "Authorization": "Bearer eyJhbGciOiJFUzI1…",
+        "Content-Type": "application/json"
+      },
+      "cuerpo": {
+        "track_id": "abc123",
+        "file_url": "x.wav"
+      },
+      "status": 403,
+      "respuesta": {
+        "error": "No tenés permiso para crear versiones"
+      }
+    },
+    {
+      "metodo": "POST",
+      "url": "http://localhost:8080/proyectos/32/canciones/32/versiones",
+      "headers": {
+        "Authorization": "Bearer eyJhbGciOiJFUzI1…"
+      },
+      "cuerpo": {
+        "archivo": "<archivo prueba-10s-220hz.wav, 1764078 bytes>",
+        "notas": "Versión subida por un Músico"
+      },
+      "status": 403,
+      "respuesta": {
+        "error": "No tenés permiso para crear versiones"
+      }
+    }
+  ],
+  "consultas": [
+    {
+      "titulo": "Rol del usuario en el proyecto",
+      "consulta": {
+        "sql": "SELECT i.nombreintegrante, r.nombrerol FROM integranteproyecto ip JOIN integrante i ON i.codintegrante = ip.codintegrante JOIN rol r ON r.codrol = ip.codrol WHERE ip.codigoproyecto = $1 AND ip.codintegrante = $2",
+        "parametros": [
+          32,
+          44
+        ],
+        "filas": [
+          {
+            "nombreintegrante": "QA Musico 4298",
+            "nombrerol": "Músico (Artista)"
+          }
+        ]
+      }
+    },
+    {
+      "titulo": "cancionversion ANTES",
+      "consulta": {
+        "sql": "SELECT count(*)::int AS versiones FROM cancionversion WHERE codigocancion = $1",
+        "parametros": [
+          32
+        ],
+        "filas": [
+          {
+            "versiones": 1
+          }
+        ]
+      }
+    },
+    {
+      "titulo": "cancionversion DESPUÉS",
+      "consulta": {
+        "sql": "SELECT count(*)::int AS versiones FROM cancionversion WHERE codigocancion = $1",
+        "parametros": [
+          32
+        ],
+        "filas": [
+          {
+            "versiones": 1
+          }
+        ]
+      }
+    }
+  ]
+}

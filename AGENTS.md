@@ -286,3 +286,12 @@ frontend para "nueva versión" más allá del form inline ya existente.
   subrepo necesita levantarse aislado para desarrollo, usar
   `docker compose -p <nombre-unico> up <servicios>` desde la raíz, no crear
   un compose nuevo en el subrepo.
+
+## Pruebas end-to-end
+
+`tests/e2e/` tiene la suite Playwright del plan de pruebas (PRU-01 a
+PRU-09), que corre contra el stack local real (no levanta nada). Los
+resultados, defectos encontrados y capturas están en
+`docs/pruebas/README.md`; la evidencia la regenera cada corrida en
+`docs/pruebas/evidencia/`. Ver `tests/e2e/README.md` para correrla.
+

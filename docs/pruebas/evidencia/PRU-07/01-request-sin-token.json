@@ -1,0 +1,61 @@
+{
+  "intercambios": [
+    {
+      "metodo": "POST",
+      "url": "http://localhost:8080/proyectos/31/canciones/31/versiones",
+      "headers": {},
+      "cuerpo": {
+        "archivo": "<archivo prueba-10s-220hz.wav, 1764078 bytes>",
+        "notas": "Intento sin token"
+      },
+      "status": 401,
+      "respuesta": {
+        "error": "token de autenticación requerido"
+      }
+    },
+    {
+      "metodo": "POST",
+      "url": "/proyectos/31/canciones/31/versiones",
+      "headers": {
+        "Authorization": "Bearer token-invalido"
+      },
+      "cuerpo": "(multipart con archivo .wav)",
+      "status": 401,
+      "respuesta": {
+        "error": "token inválido o expirado"
+      }
+    }
+  ],
+  "consultas": [
+    {
+      "titulo": "Versiones de la canción ANTES del POST",
+      "consulta": {
+        "sql": "SELECT count(*)::int AS versiones, max(numeroversion) AS ultima_version FROM cancionversion WHERE codigocancion = $1",
+        "parametros": [
+          31
+        ],
+        "filas": [
+          {
+            "versiones": 1,
+            "ultima_version": 1
+          }
+        ]
+      }
+    },
+    {
+      "titulo": "Versiones de la canción DESPUÉS del POST",
+      "consulta": {
+        "sql": "SELECT count(*)::int AS versiones, max(numeroversion) AS ultima_version FROM cancionversion WHERE codigocancion = $1",
+        "parametros": [
+          31
+        ],
+        "filas": [
+          {
+            "versiones": 1,
+            "ultima_version": 1
+          }
+        ]
+      }
+    }
+  ]
+}
