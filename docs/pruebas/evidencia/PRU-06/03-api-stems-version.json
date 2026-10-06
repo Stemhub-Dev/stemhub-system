@@ -1,0 +1,69 @@
+{
+  "intercambios": [
+    {
+      "metodo": "GET",
+      "url": "http://localhost:8080/proyectos/30/canciones/30/versiones/29/stems",
+      "headers": {
+        "Authorization": "Bearer eyJhbGciOiJFUzI1…"
+      },
+      "status": 200,
+      "respuesta": [
+        {
+          "codStem": 24,
+          "nombre": "Voz",
+          "codCategoriaStem": 4,
+          "nombreCategoria": "Voz",
+          "generadoConIA": true,
+          "nombreArchivo": "vocals.wav",
+          "formatoArchivo": "wav"
+        },
+        {
+          "codStem": 25,
+          "nombre": "Batería",
+          "codCategoriaStem": 1,
+          "nombreCategoria": "Batería",
+          "generadoConIA": true,
+          "nombreArchivo": "drums.wav",
+          "formatoArchivo": "wav"
+        },
+        {
+          "codStem": 26,
+          "nombre": "Bajo",
+          "codCategoriaStem": 2,
+          "nombreCategoria": "Bajo",
+          "generadoConIA": true,
+          "nombreArchivo": "bass.wav",
+          "formatoArchivo": "wav"
+        },
+        {
+          "codStem": 27,
+          "nombre": "Otros",
+          "codCategoriaStem": 6,
+          "nombreCategoria": "Otros",
+          "generadoConIA": true,
+          "nombreArchivo": "other.wav",
+          "formatoArchivo": "wav"
+        }
+      ]
+    }
+  ],
+  "consultas": [
+    {
+      "titulo": "Separación registrada",
+      "consulta": {
+        "sql": "SELECT codseparacionstem, cantidadstems, estadoseparacion, tiempoprocesamientoms FROM separacionstem WHERE codigocancionversion = $1",
+        "parametros": [
+          29
+        ],
+        "filas": [
+          {
+            "codseparacionstem": "6",
+            "cantidadstems": 4,
+            "estadoseparacion": "COMPLETADA",
+            "tiempoprocesamientoms": 16140
+          }
+        ]
+      }
+    }
+  ]
+}

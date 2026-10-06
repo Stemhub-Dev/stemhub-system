@@ -1,0 +1,72 @@
+{
+  "intercambios": [
+    {
+      "metodo": "GET",
+      "url": "http://localhost:8080/proyectos/29/integrantes",
+      "headers": {
+        "Authorization": "Bearer eyJhbGciOiJFUzI1…"
+      },
+      "status": 200,
+      "respuesta": [
+        {
+          "codigoIntegrante": 39,
+          "nombre": "QA Productor 4238",
+          "avatarUrl": null,
+          "codRol": 1,
+          "nombreRol": "Productor",
+          "esPropietario": true
+        },
+        {
+          "codigoIntegrante": 40,
+          "nombre": "QA Musico 4731",
+          "avatarUrl": null,
+          "codRol": 2,
+          "nombreRol": "Músico (Artista)",
+          "esPropietario": false
+        }
+      ]
+    }
+  ],
+  "consultas": [
+    {
+      "titulo": "Invitación (módulo de notificaciones)",
+      "consulta": {
+        "sql": "SELECT codigoinvitacionproy, emailinvitado, codrol, fechahoraaceptacioninvitacion FROM invitacionproyecto WHERE codigoproyecto = $1",
+        "parametros": [
+          29
+        ],
+        "filas": [
+          {
+            "codigoinvitacionproy": "12",
+            "emailinvitado": "qa-musico-1791057504731-9791@test.local",
+            "codrol": "2",
+            "fechahoraaceptacioninvitacion": "2026-10-03T19:58:28.920Z"
+          }
+        ]
+      }
+    },
+    {
+      "titulo": "Integrantes del proyecto (módulo de versionado)",
+      "consulta": {
+        "sql": "SELECT ip.codintegrante, i.nombreintegrante, r.nombrerol, ip.fechahorabajaintegranteproy FROM integranteproyecto ip JOIN integrante i ON i.codintegrante = ip.codintegrante JOIN rol r ON r.codrol = ip.codrol WHERE ip.codigoproyecto = $1 ORDER BY ip.codigointegranteproyecto",
+        "parametros": [
+          29
+        ],
+        "filas": [
+          {
+            "codintegrante": "39",
+            "nombreintegrante": "QA Productor 4238",
+            "nombrerol": "Productor",
+            "fechahorabajaintegranteproy": null
+          },
+          {
+            "codintegrante": "40",
+            "nombreintegrante": "QA Musico 4731",
+            "nombrerol": "Músico (Artista)",
+            "fechahorabajaintegranteproy": null
+          }
+        ]
+      }
+    }
+  ]
+}
