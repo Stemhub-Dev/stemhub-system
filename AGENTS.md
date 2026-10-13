@@ -176,8 +176,11 @@ contexto para sesión/perfil.
 - Auth: `/login` con toggle Ingresar/Crear cuenta en un mismo formulario
   (`LoginPage.tsx`) — signup por email+password vía GoTrue REST directo
   (`src/lib/auth/gotrue.ts`, sin SDK `supabase-js`), más login con Google
-  OAuth. `/registro` (`RegisterProfilePage.tsx`) cubre el caso de completar
-  perfil tras login por Google (no pide nombre en el flujo OAuth).
+  (OAuth de Supabase Auth con PKCE; la vuelta llega a `/auth/callback`,
+  `AuthCallbackPage.tsx`). `/registro` (`RegisterProfilePage.tsx`) cubre el
+  caso de completar perfil tras el primer login por Google, con el nombre de
+  la cuenta ya sugerido. El proveedor se habilita fuera del código (Google
+  Cloud Console + Supabase Cloud/CLI): ver `docs/login-google.md`.
 - Home, listado de proyectos (`/proyectos`), crear proyecto
   (`/proyectos/nuevo`) con selección de género/tipo de proyecto.
 - Canciones: listado por proyecto (`SongsPage`), "Mis canciones"
