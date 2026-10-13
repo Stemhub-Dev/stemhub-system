@@ -34,10 +34,14 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-    # Sin "ports:" a propósito: solo accesible desde los otros contenedores
-    # de este compose (backend se conecta por nombre de servicio "postgres").
-    # Publicar el puerto al host además choca con lo que Coolify ya usa en
-    # el servidor (proxy, panel) y expondría la base directo a internet.
+    # Publicado solo en 127.0.0.1 del host (puerto 5433, no 5432, para no
+    # chocar con nada de Coolify): no es alcanzable desde la LAN ni desde
+    # internet. Es el destino de `tailscale serve --tcp 5433` en el servidor,
+    # que es la única vía de acceso remoto a la base (DBeaver, etc. del
+    # equipo, vía la tailnet). Nunca publicarlo en 0.0.0.0: los puertos que
+    # publica Docker se saltean el firewall del host.
+    ports:
+      - "127.0.0.1:5433:5432"
     volumes:
       - stemhub_postgres_data:/var/lib/postgresql/data
     healthcheck:
