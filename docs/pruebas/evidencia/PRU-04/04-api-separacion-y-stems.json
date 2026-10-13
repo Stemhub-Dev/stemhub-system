@@ -1,0 +1,109 @@
+{
+  "intercambios": [
+    {
+      "metodo": "GET",
+      "url": "http://localhost:8080/proyectos/34/canciones/34/versiones/33/stems/separacion",
+      "headers": {
+        "Authorization": "Bearer eyJhbGciOiJFUzI1…"
+      },
+      "status": 200,
+      "respuesta": {
+        "codSeparacionStem": 7,
+        "codigoCancionVersion": 33,
+        "cantidadStems": 4,
+        "estado": "COMPLETADA",
+        "mensajeError": null,
+        "tiempoProcesamientoMs": 11756,
+        "fechaHoraSolicitud": "2026-10-03T17:20:24.583754-03:00",
+        "fechaHoraFin": "2026-10-03T17:20:36.496741-03:00"
+      }
+    },
+    {
+      "metodo": "GET",
+      "url": "http://localhost:8080/proyectos/34/canciones/34/versiones/33/stems",
+      "headers": {
+        "Authorization": "Bearer eyJhbGciOiJFUzI1…"
+      },
+      "status": 200,
+      "respuesta": [
+        {
+          "codStem": 28,
+          "nombre": "Voz",
+          "codCategoriaStem": 4,
+          "nombreCategoria": "Voz",
+          "generadoConIA": true,
+          "nombreArchivo": "vocals.wav",
+          "formatoArchivo": "wav"
+        },
+        {
+          "codStem": 29,
+          "nombre": "Batería",
+          "codCategoriaStem": 1,
+          "nombreCategoria": "Batería",
+          "generadoConIA": true,
+          "nombreArchivo": "drums.wav",
+          "formatoArchivo": "wav"
+        },
+        {
+          "codStem": 30,
+          "nombre": "Bajo",
+          "codCategoriaStem": 2,
+          "nombreCategoria": "Bajo",
+          "generadoConIA": true,
+          "nombreArchivo": "bass.wav",
+          "formatoArchivo": "wav"
+        },
+        {
+          "codStem": 31,
+          "nombre": "Otros",
+          "codCategoriaStem": 6,
+          "nombreCategoria": "Otros",
+          "generadoConIA": true,
+          "nombreArchivo": "other.wav",
+          "formatoArchivo": "wav"
+        }
+      ]
+    }
+  ],
+  "consultas": [
+    {
+      "titulo": "Stems asociados a la versión de origen",
+      "consulta": {
+        "sql": "SELECT s.codstem, s.nombrestem, cs.nombrecategoriastem AS categoria, s.generadoconia, s.codigocancionversion FROM stem s JOIN categoriastem cs ON cs.codcategoriastem = s.codcategoriastem WHERE s.codigocancionversion = $1 ORDER BY s.codstem",
+        "parametros": [
+          33
+        ],
+        "filas": [
+          {
+            "codstem": "28",
+            "nombrestem": "Voz",
+            "categoria": "Voz",
+            "generadoconia": true,
+            "codigocancionversion": "33"
+          },
+          {
+            "codstem": "29",
+            "nombrestem": "Batería",
+            "categoria": "Batería",
+            "generadoconia": true,
+            "codigocancionversion": "33"
+          },
+          {
+            "codstem": "30",
+            "nombrestem": "Bajo",
+            "categoria": "Bajo",
+            "generadoconia": true,
+            "codigocancionversion": "33"
+          },
+          {
+            "codstem": "31",
+            "nombrestem": "Otros",
+            "categoria": "Otros",
+            "generadoconia": true,
+            "codigocancionversion": "33"
+          }
+        ]
+      }
+    }
+  ]
+}

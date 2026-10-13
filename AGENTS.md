@@ -176,8 +176,11 @@ contexto para sesión/perfil.
 - Auth: `/login` con toggle Ingresar/Crear cuenta en un mismo formulario
   (`LoginPage.tsx`) — signup por email+password vía GoTrue REST directo
   (`src/lib/auth/gotrue.ts`, sin SDK `supabase-js`), más login con Google
-  OAuth. `/registro` (`RegisterProfilePage.tsx`) cubre el caso de completar
-  perfil tras login por Google (no pide nombre en el flujo OAuth).
+  (OAuth de Supabase Auth con PKCE; la vuelta llega a `/auth/callback`,
+  `AuthCallbackPage.tsx`). `/registro` (`RegisterProfilePage.tsx`) cubre el
+  caso de completar perfil tras el primer login por Google, con el nombre de
+  la cuenta ya sugerido. El proveedor se habilita fuera del código (Google
+  Cloud Console + Supabase Cloud/CLI): ver `docs/login-google.md`.
 - Home, listado de proyectos (`/proyectos`), crear proyecto
   (`/proyectos/nuevo`) con selección de género/tipo de proyecto.
 - Canciones: listado por proyecto (`SongsPage`), "Mis canciones"
@@ -286,3 +289,12 @@ frontend para "nueva versión" más allá del form inline ya existente.
   subrepo necesita levantarse aislado para desarrollo, usar
   `docker compose -p <nombre-unico> up <servicios>` desde la raíz, no crear
   un compose nuevo en el subrepo.
+
+## Pruebas end-to-end
+
+`tests/e2e/` tiene la suite Playwright del plan de pruebas (PRU-01 a
+PRU-09), que corre contra el stack local real (no levanta nada). Los
+resultados, defectos encontrados y capturas están en
+`docs/pruebas/README.md`; la evidencia la regenera cada corrida en
+`docs/pruebas/evidencia/`. Ver `tests/e2e/README.md` para correrla.
+

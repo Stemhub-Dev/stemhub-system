@@ -1,7 +1,15 @@
-# Repos clonados por setup.sh (viven en sus propios repos de GitHub)
-Stem-Hub-BackEnd/
-stemhub-frontend/
-stemhub-microservicio-IA/
+# Repos clonados por setup.sh (viven en sus propios repos de GitHub).
+# Sin "/" final para que también ignore symlinks a clones hermanos.
+/Stem-Hub-BackEnd
+/stemhub-frontend
+/stemhub-microservicio-IA
+
+# Artefactos de corridas e2e (Playwright)
+tests/e2e/node_modules/
+tests/e2e/.cache/
+tests/e2e/playwright-report/
+tests/e2e/test-results/
+tests/e2e/resultados/
 
 # Variables de entorno locales
 .env

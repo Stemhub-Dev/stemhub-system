@@ -1,0 +1,33 @@
+{
+  "intercambios": [
+    {
+      "metodo": "GET",
+      "url": "http://localhost:8080/proyectos/25/canciones/26/versiones",
+      "headers": {
+        "Authorization": "Bearer eyJhbGciOiJFUzI1…"
+      },
+      "status": 200,
+      "respuesta": [
+        {
+          "codigoCancionVersion": 25,
+          "numeroVersion": 2,
+          "etiquetaVersion": "v1.1.0",
+          "fechaHoraAlta": "2026-10-03T16:57:57.476843-03:00",
+          "urlArchivo": "proyectos/25/canciones/26/v2.wav",
+          "formatoArchivo": "wav",
+          "notas": "Mezcla nueva: bajo más presente y voz al frente."
+        },
+        {
+          "codigoCancionVersion": 24,
+          "numeroVersion": 1,
+          "etiquetaVersion": "v1.0.0",
+          "fechaHoraAlta": "2026-10-03T16:57:57.164318-03:00",
+          "urlArchivo": "proyectos/25/canciones/26/v1.wav",
+          "formatoArchivo": "wav",
+          "notas": null
+        }
+      ]
+    }
+  ],
+  "consultas": []
+}

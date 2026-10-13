@@ -1,0 +1,14 @@
+{
+  "asunto": "Te invitaron a colaborar en PRU-05 Proyecto 10-03 19:58 en StemHub",
+  "de": {
+    "Name": "StemHub",
+    "Address": "no-reply@stemhub.app"
+  },
+  "para": [
+    {
+      "Name": "",
+      "Address": "qa-musico-1791057504731-9791@test.local"
+    }
+  ],
+  "texto": "Hola,\r\n\r\nQA Productor 4238 te invitó a colaborar en el proyecto \"PRU-05 Proyecto 10-03 19:58\" en StemHub, con el rol de Músico (Artista).\r\n\r\nPara aceptar la invitación, ingresá al siguiente link:\r\nhttp://localhost:5173/invitaciones/2ab050449278335443267d54e856b3062a45e7e3752f1aebdd67a2a7c7790db4\r\n\r\nEste link vence en 7 días.\r\n\r\nSi no esperabas esta invitación, podés ignorar este mensaje.\r\n"
+}
