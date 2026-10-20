@@ -1,12 +1,13 @@
 {
   "name": "stemhub-e2e",
   "private": true,
-  "description": "Pruebas end-to-end (PRU-01 a PRU-09) contra el stack local levantado con up.sh.",
+  "description": "Pruebas end-to-end (PRU-01 a PRU-09 y PSA de subida de audio) contra el stack local o prod.",
   "type": "module",
   "scripts": {
     "test": "playwright test",
     "test:ui": "playwright test --headed",
-    "report": "playwright show-report"
+    "report": "playwright show-report",
+    "audios": "node scripts/preparar-audios.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
