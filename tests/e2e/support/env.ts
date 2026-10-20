@@ -30,12 +30,36 @@ const env = { ...leerEnv(resolve(raiz, '.env')), ...process.env } as Record<stri
 const ANON_KEY_LOCAL =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
 
+// E2E_TARGET=prod apunta a producción (solo las specs PSA marcadas @prod):
+// no se crean usuarios ni se toca la BD, se usa la cuenta y el proyecto de
+// QA de E2E_PROD_*. La anon key de prod (E2E_ANON_KEY) es la publishable key
+// (sb_publishable_...) del bundle JS de app.stemhub.live; la del .env es la local.
+const esProd = env.E2E_TARGET === 'prod'
+
 export const config = {
-  frontendUrl: env.E2E_FRONTEND_URL ?? 'http://localhost:5173',
-  apiUrl: env.E2E_API_URL ?? 'http://localhost:8080',
-  gotrueUrl: env.E2E_GOTRUE_URL ?? 'http://127.0.0.1:54321/auth/v1',
+  target: esProd ? ('prod' as const) : ('local' as const),
+  frontendUrl: env.E2E_FRONTEND_URL ?? (esProd ? 'https://app.stemhub.live' : 'http://localhost:5173'),
+  apiUrl: env.E2E_API_URL ?? (esProd ? 'https://api.stemhub.live' : 'http://localhost:8080'),
+  gotrueUrl:
+    env.E2E_GOTRUE_URL ??
+    (esProd ? 'https://nksfrsunmecuwuukkmtq.supabase.co/auth/v1' : 'http://127.0.0.1:54321/auth/v1'),
   mailpitUrl: env.E2E_MAILPIT_URL ?? 'http://127.0.0.1:54324',
-  anonKey: env.VITE_SUPABASE_ANON_KEY ?? ANON_KEY_LOCAL,
+  anonKey: esProd ? (env.E2E_ANON_KEY ?? '') : (env.VITE_SUPABASE_ANON_KEY ?? ANON_KEY_LOCAL),
+  prod: {
+    email: env.E2E_PROD_EMAIL ?? '',
+    password: env.E2E_PROD_PASSWORD ?? '',
+    proyecto: Number(env.E2E_PROD_PROYECTO_ID ?? 0),
+  },
+  // Canciones ya rotas a diagnosticar (PSA-01 a PSA-04): "proyecto/canción"
+  // separadas por coma, ej. "3/11,7/10".
+  diagnostico: (env.E2E_DIAG_CANCIONES ?? '')
+    .split(',')
+    .map((par) => par.trim())
+    .filter(Boolean),
+  // PSA-33 (espera > 15 min) y PSA-41 (detiene MinIO) solo corren a pedido.
+  lentas: env.E2E_LENTAS === '1',
+  detenerMinio: env.E2E_DETENER_MINIO === '1',
+  webkit: env.E2E_WEBKIT === '1',
   db: {
     host: env.E2E_DB_HOST ?? '127.0.0.1',
     port: Number(env.DB_PORT ?? 5433),

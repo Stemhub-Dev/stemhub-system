@@ -3,9 +3,11 @@ import { config } from './support/env'
 
 // Las pruebas corren contra el stack local real (./up.sh): frontend, backend,
 // Postgres, GoTrue, Mailpit, MinIO y el microservicio de IA. No levantan nada
-// por su cuenta.
+// por su cuenta. Con E2E_TARGET=prod corren solo las marcadas @prod (ver
+// support/env.ts).
 export default defineConfig({
   testDir: './specs',
+  ...(config.target === 'prod' ? { grep: /@prod/ } : {}),
   // Las separaciones con Spleeter se procesan de a una en el backend y
   // tardan minutos: en serie el tiempo total es predecible.
   workers: 1,
@@ -19,8 +21,9 @@ export default defineConfig({
   ],
   use: {
     baseURL: config.frontendUrl,
-    // Chrome del sistema: no hace falta `npx playwright install`.
-    channel: 'chrome',
+    // Chrome del sistema: no hace falta `npx playwright install`. Con
+    // E2E_WEBKIT=1, WebKit (motor de Safari): `npx playwright install webkit`.
+    ...(config.webkit ? { browserName: 'webkit' as const } : { channel: 'chrome' }),
     viewport: { width: 1600, height: 1000 },
     locale: 'es-AR',
     timezoneId: 'America/Argentina/Buenos_Aires',
