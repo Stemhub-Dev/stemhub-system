@@ -1,0 +1,50 @@
+{
+  "intercambios": [
+    {
+      "metodo": "GET",
+      "url": "http://localhost:8080/proyectos/27/canciones/28/versiones/27/comentarios",
+      "headers": {
+        "Authorization": "Bearer eyJhbGciOiJFUzI1…"
+      },
+      "status": 200,
+      "respuesta": [
+        {
+          "codigoComentario": 21,
+          "codStem": null,
+          "texto": "El bajo no se escucha en este fragmento",
+          "estado": "Pendiente",
+          "tiempoInicioSegundos": 83.333,
+          "tiempoFinSegundos": 83.333,
+          "fechaHoraAlta": "2026-10-03T16:58:06.572246-03:00",
+          "autor": {
+            "codigoIntegrante": 37,
+            "nombre": "QA Productor 4274"
+          },
+          "esPropio": true,
+          "respuestas": []
+        }
+      ]
+    }
+  ],
+  "consultas": [
+    {
+      "titulo": "Fila del comentario en la BD",
+      "consulta": {
+        "sql": "SELECT codigocomentario, codigocancionversion, descripcioncomentario, tiempoiniciosegundos, tiempofinsegundos, fechahoraaltacomentario FROM comentario WHERE codigocomentario = $1",
+        "parametros": [
+          21
+        ],
+        "filas": [
+          {
+            "codigocomentario": "21",
+            "codigocancionversion": "27",
+            "descripcioncomentario": "El bajo no se escucha en este fragmento",
+            "tiempoiniciosegundos": "83.333",
+            "tiempofinsegundos": "83.333",
+            "fechahoraaltacomentario": "2026-10-03T19:58:06.572Z"
+          }
+        ]
+      }
+    }
+  ]
+}

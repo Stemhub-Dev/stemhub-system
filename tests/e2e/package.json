@@ -1,0 +1,18 @@
+{
+  "name": "stemhub-e2e",
+  "private": true,
+  "description": "Pruebas end-to-end (PRU-01 a PRU-09) contra el stack local levantado con up.sh.",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --headed",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.4",
+    "@types/pg": "^8.23.1",
+    "pg": "^8.23.1",
+    "typescript": "^7.0.2"
+  }
+}

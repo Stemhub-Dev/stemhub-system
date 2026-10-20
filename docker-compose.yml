@@ -82,6 +82,11 @@ services:
     #         - driver: nvidia
     #           count: 1
     #           capabilities: [gpu]
+    environment:
+      # Fracción de la RAM total que puede usar una separación antes de que el
+      # worker la corte (ver AGENTS.md del microservicio). Fracción y no
+      # mem_limit fijo, para que escale con el servidor.
+      SPLEETER_MEMORY_FRACTION: ${SPLEETER_MEMORY_FRACTION:-0.6}
     volumes:
       - ml_tmp_data:/shared-tmp
       - ml_spleeter_models:/models

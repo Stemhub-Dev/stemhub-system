@@ -1,0 +1,137 @@
+{
+  "intercambios": [
+    {
+      "metodo": "GET",
+      "url": "http://localhost:8080/proyectos/26/canciones/27/versiones/26/comentarios",
+      "headers": {
+        "Authorization": "Bearer eyJhbGciOiJFUzI1…"
+      },
+      "status": 200,
+      "respuesta": [
+        {
+          "codigoComentario": 20,
+          "codStem": null,
+          "texto": "Final: probar fade out más corto",
+          "estado": "Pendiente",
+          "tiempoInicioSegundos": 95,
+          "tiempoFinSegundos": 95,
+          "fechaHoraAlta": "2026-10-02T16:58:02.497192-03:00",
+          "autor": {
+            "codigoIntegrante": 35,
+            "nombre": "QA Productor 1205"
+          },
+          "esPropio": true,
+          "respuestas": []
+        },
+        {
+          "codigoComentario": 19,
+          "codStem": null,
+          "texto": "El solo de guitarra quedó muy largo",
+          "estado": "Pendiente",
+          "tiempoInicioSegundos": 61,
+          "tiempoFinSegundos": 61,
+          "fechaHoraAlta": "2026-10-01T16:58:02.480463-03:00",
+          "autor": {
+            "codigoIntegrante": 36,
+            "nombre": "QA Musico 1971"
+          },
+          "esPropio": false,
+          "respuestas": []
+        },
+        {
+          "codigoComentario": 18,
+          "codStem": null,
+          "texto": "Revisar afinación de la voz en el estribillo",
+          "estado": "Pendiente",
+          "tiempoInicioSegundos": 42,
+          "tiempoFinSegundos": 42,
+          "fechaHoraAlta": "2026-09-30T16:58:02.463812-03:00",
+          "autor": {
+            "codigoIntegrante": 35,
+            "nombre": "QA Productor 1205"
+          },
+          "esPropio": true,
+          "respuestas": []
+        },
+        {
+          "codigoComentario": 17,
+          "codStem": null,
+          "texto": "La batería entra tarde en el primer verso",
+          "estado": "Pendiente",
+          "tiempoInicioSegundos": 18,
+          "tiempoFinSegundos": 18,
+          "fechaHoraAlta": "2026-09-29T16:58:02.447278-03:00",
+          "autor": {
+            "codigoIntegrante": 36,
+            "nombre": "QA Musico 1971"
+          },
+          "esPropio": false,
+          "respuestas": []
+        },
+        {
+          "codigoComentario": 16,
+          "codStem": null,
+          "texto": "Intro: subir el pad un par de dB",
+          "estado": "Pendiente",
+          "tiempoInicioSegundos": 5,
+          "tiempoFinSegundos": 5,
+          "fechaHoraAlta": "2026-09-28T16:58:02.434096-03:00",
+          "autor": {
+            "codigoIntegrante": 35,
+            "nombre": "QA Productor 1205"
+          },
+          "esPropio": true,
+          "respuestas": []
+        }
+      ]
+    }
+  ],
+  "consultas": [
+    {
+      "titulo": "Comentarios de la versión en la BD",
+      "consulta": {
+        "sql": "SELECT c.codigocomentario, i.nombreintegrante AS autor, c.descripcioncomentario AS texto, c.tiempoiniciosegundos, c.fechahoraaltacomentario FROM comentario c JOIN integrante i ON i.codintegrante = c.codintegrante WHERE c.codigocancionversion = $1 ORDER BY c.fechahoraaltacomentario DESC",
+        "parametros": [
+          26
+        ],
+        "filas": [
+          {
+            "codigocomentario": "20",
+            "autor": "QA Productor 1205",
+            "texto": "Final: probar fade out más corto",
+            "tiempoiniciosegundos": "95.000",
+            "fechahoraaltacomentario": "2026-10-02T19:58:02.497Z"
+          },
+          {
+            "codigocomentario": "19",
+            "autor": "QA Musico 1971",
+            "texto": "El solo de guitarra quedó muy largo",
+            "tiempoiniciosegundos": "61.000",
+            "fechahoraaltacomentario": "2026-10-01T19:58:02.480Z"
+          },
+          {
+            "codigocomentario": "18",
+            "autor": "QA Productor 1205",
+            "texto": "Revisar afinación de la voz en el estribillo",
+            "tiempoiniciosegundos": "42.000",
+            "fechahoraaltacomentario": "2026-09-30T19:58:02.463Z"
+          },
+          {
+            "codigocomentario": "17",
+            "autor": "QA Musico 1971",
+            "texto": "La batería entra tarde en el primer verso",
+            "tiempoiniciosegundos": "18.000",
+            "fechahoraaltacomentario": "2026-09-29T19:58:02.447Z"
+          },
+          {
+            "codigocomentario": "16",
+            "autor": "QA Productor 1205",
+            "texto": "Intro: subir el pad un par de dB",
+            "tiempoiniciosegundos": "5.000",
+            "fechahoraaltacomentario": "2026-09-28T19:58:02.434Z"
+          }
+        ]
+      }
+    }
+  ]
+}
