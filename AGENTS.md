@@ -290,6 +290,17 @@ frontend para "nueva versión" más allá del form inline ya existente.
   `docker compose -p <nombre-unico> up <servicios>` desde la raíz, no crear
   un compose nuevo en el subrepo.
 
+## Monitoreo del servidor de producción
+
+`monitoring/` (ver su README): Prometheus + node-exporter + cAdvisor corren
+en el server (`~/stemhub-monitoring`, `docker compose` a mano, fuera de
+Coolify) y Prometheus se publica solo a la tailnet (`tailscale serve --tcp
+9090`). Grafana corre en la máquina de cada dev con los dashboards
+provisionados desde el repo. Se agregó tras un incidente (2026-10-13): una
+separación de Spleeter llegó a 5,3 GB de RAM y dejó el server sin responder
+~40 min; desde entonces el worker corta las separaciones que superan
+`SPLEETER_MEMORY_FRACTION` de la RAM total (ver AGENTS.md del microservicio).
+
 ## Pruebas end-to-end
 
 `tests/e2e/` tiene la suite Playwright del plan de pruebas (PRU-01 a

@@ -1,0 +1,64 @@
+# Métricas del servidor de producción: Prometheus + node-exporter (host) +
+# cAdvisor (contenedores). Stack aparte del de la app y fuera de Coolify, para
+# que un redeploy de la app no lo toque. Grafana NO corre acá: corre en la
+# máquina de cada dev (ver ../grafana) y lee Prometheus por Tailscale.
+#
+# Todo escucha solo en 127.0.0.1; Prometheus se publica a la tailnet con
+# `tailscale serve` (ver ../README.md). Nunca publicar estos puertos en 0.0.0.0.
+name: stemhub-monitoring
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.13.4
+    restart: unless-stopped
+    # Red del host para llegar a los exporters en 127.0.0.1 sin abrirlos a la LAN.
+    network_mode: host
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.retention.size=2GB
+      - --web.listen-address=127.0.0.1:9090
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    mem_limit: 512m
+
+  node-exporter:
+    image: prom/node-exporter:v1.12.1
+    restart: unless-stopped
+    network_mode: host
+    pid: host
+    command:
+      - --path.rootfs=/host
+      - --web.listen-address=127.0.0.1:9100
+    volumes:
+      - /:/host:ro,rslave
+    mem_limit: 128m
+
+  cadvisor:
+    image: ghcr.io/google/cadvisor:v0.60.6
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+    ports:
+      # 8080 ya lo usa coolify-proxy.
+      - "127.0.0.1:8098:8080"
+    command:
+      - --docker_only=true
+      - --housekeeping_interval=15s
+      - --enable_metrics=cpu,memory,network,diskIO,oom_event,pressure
+      # Sin las etiquetas docker de cada contenedor: el dashboard agrupa por
+      # nombre, y las de Coolify multiplicarían las series sin aportar nada.
+      - --store_container_labels=false
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    mem_limit: 256m
+
+volumes:
+  prometheus_data:

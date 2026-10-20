@@ -1,0 +1,31 @@
+# Grafana local (en la máquina de cada dev), leyendo el Prometheus del
+# servidor de producción por Tailscale. Ver ../README.md.
+#
+#   docker compose -f monitoring/grafana/docker-compose.yml up -d
+#   → http://localhost:3000
+name: stemhub-grafana
+
+services:
+  grafana:
+    image: grafana/grafana-oss:13.0.2
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      # IP de Tailscale del server: el DNS de Docker no resuelve MagicDNS
+      # (stemhub-server.tail5ebf3c.ts.net) desde dentro del contenedor.
+      PROMETHEUS_URL: ${PROMETHEUS_URL:-http://100.77.160.104:9090}
+      # Solo escucha en localhost: se ve sin login (Viewer, con Explore
+      # habilitado). Para editar, entrar como admin (admin/admin la primera vez).
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_USERS_VIEWERS_CAN_EDIT: "true"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/stemhub-servidor.json
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+    volumes:
+      - ./provisioning:/etc/grafana/provisioning:ro
+      - ./dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+
+volumes:
+  grafana_data:
